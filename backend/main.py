@@ -1,10 +1,33 @@
-from flask import Flask
-app = Flask(__name__)
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
-@app.route('/api')
-def hello():
-    return "Hello!... testing backend"
+from .database import init_db
+from .routes import doctors, patients, appointments, doctor_dashboard
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+app = FastAPI(
+    title="HealthcareApp API",
+    version="0.1.0",
+)
 
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # en producción, restringir
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+app.include_router(doctors.router, prefix="/doctors", tags=["doctors"])
+app.include_router(patients.router, prefix="/patients", tags=["patients"])
+app.include_router(appointments.router, prefix="/appointments", tags=["appointments"])
+app.include_router(doctor_dashboard.router, prefix="/doctor", tags=["doctor_dashboard"])
+
+
+@app.on_event("startup")
+def on_startup():
+    init_db()
+
+
+@app.get("/")
+def read_root():
+    return {"status": "ok", "message": "HealthcareApp backend running"}
